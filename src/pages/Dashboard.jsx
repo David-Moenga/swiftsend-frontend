@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import { ArrowDownLeft, ArrowUpRight, Bell, ChevronRight, CirclePlus, CreditCard, MoreHorizontal, Send, WalletCards } from 'lucide-react';
 
 const activities = [
@@ -16,5 +17,12 @@ const Dashboard = () => <div className="min-h-[720px] bg-[#f7f9fc] py-8 lg:py-12
 </div></div>;
 
 const Recipient = ({ initials, name, detail, color }) => <div className="flex items-center gap-3"><span className={`grid h-9 w-9 place-items-center rounded-full text-xs font-bold ${color}`}>{initials}</span><div className="flex-1"><p className="text-sm font-semibold text-slate-800">{name}</p><p className="text-xs text-slate-500">{detail}</p></div><button className="grid h-8 w-8 place-items-center rounded-lg text-[#087869] hover:bg-[#eafaf4]" aria-label={`Send money to ${name}`}><CirclePlus size={18} /></button></div>;
+
+Recipient.propTypes = {
+  initials: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
+  detail: PropTypes.string.isRequired,
+  color: PropTypes.string.isRequired,
+};
 
 export default Dashboard;

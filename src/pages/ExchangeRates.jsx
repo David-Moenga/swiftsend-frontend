@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
 import { ArrowDownUp, Clock3, Info, TrendingUp } from 'lucide-react';
 
 const currencies = { USD: { symbol: '$', flag: '🇺🇸', name: 'US Dollar' }, KES: { symbol: 'KSh', flag: '🇰🇪', name: 'Kenyan Shilling' }, NGN: { symbol: '₦', flag: '🇳🇬', name: 'Nigerian Naira' }, GHS: { symbol: 'GH₵', flag: '🇬🇭', name: 'Ghanaian Cedi' }, PHP: { symbol: '₱', flag: '🇵🇭', name: 'Philippine Peso' }, GBP: { symbol: '£', flag: '🇬🇧', name: 'British Pound' } };
@@ -25,5 +26,16 @@ const ExchangeRates = () => {
 const CurrencyInput = ({ label, amount, onAmount, value, onChange, readOnly }) => <div className="rounded-2xl border border-slate-200 p-4"><label className="text-sm font-semibold text-slate-600">{label}</label><div className="mt-2 flex items-center gap-2"><input value={amount} onChange={(e) => onAmount?.(e.target.value)} readOnly={readOnly} inputMode="decimal" className="min-w-0 flex-1 bg-transparent text-2xl font-bold tracking-[-.04em] outline-none read-only:text-slate-900" /><select value={value} onChange={(e) => onChange(e.target.value)} className="max-w-[125px] rounded-lg bg-slate-100 px-2 py-2 text-sm font-bold text-slate-700 outline-none">{Object.entries(currencies).map(([code, data]) => <option key={code} value={code}>{data.flag} {code}</option>)}</select></div><p className="mt-2 text-xs text-slate-400">{currencies[value].name}</p></div>;
 const RateInfo = ({ icon, title, text }) => <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><span className="text-[#0f8c76]">{icon}</span><div><p className="text-xs text-slate-500">{title}</p><p className="mt-0.5 text-sm font-semibold text-slate-800">{text}</p></div></div>;
 const Popular = ({ from, to, rate }) => <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-4"><div className="flex items-center gap-2"><span>{currencies[from].flag}</span><span className="font-semibold text-slate-800">{from}</span><span className="text-slate-400">→</span><span>{currencies[to].flag}</span><span className="font-semibold text-slate-800">{to}</span></div><span className="text-sm font-bold text-[#087869]">{rate}</span></div>;
+
+CurrencyInput.propTypes = {
+  label: PropTypes.string.isRequired,
+  amount: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  onAmount: PropTypes.func,
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  readOnly: PropTypes.bool,
+};
+RateInfo.propTypes = { icon: PropTypes.node.isRequired, title: PropTypes.string.isRequired, text: PropTypes.string.isRequired };
+Popular.propTypes = { from: PropTypes.string.isRequired, to: PropTypes.string.isRequired, rate: PropTypes.string.isRequired };
 
 export default ExchangeRates;

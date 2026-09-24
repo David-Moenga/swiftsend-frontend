@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 import { ChevronDown, MessageCircle, Search, Send, ShieldCheck } from 'lucide-react';
 
 const questions = [
@@ -15,5 +16,7 @@ const Help = () => {
 };
 
 const HelpCard = ({ icon, title, text }) => <button className="rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5 hover:shadow-md"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[#e7faf3] text-[#087869]">{icon}</span><p className="mt-4 font-bold text-slate-900">{title}</p><p className="mt-1 text-sm text-slate-500">{text}</p></button>;
+
+HelpCard.propTypes = { icon: PropTypes.node.isRequired, title: PropTypes.string.isRequired, text: PropTypes.string.isRequired };
 
 export default Help;

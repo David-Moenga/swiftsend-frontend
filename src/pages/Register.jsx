@@ -1,33 +1,65 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import {
+  AlertCircle,
+  ArrowRight,
+  Check,
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  LockKeyhole,
+  Mail,
+  UserRound,
+} from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
-import { apiUrl } from '../auth/api';
+import { apiUrl, getApiErrorMessage, isDuplicateRegistrationError } from '../auth/api';
+
+const inputClass = 'mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#4cbfa5] focus:ring-4 focus:ring-[#dff7ef]';
 
 const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [errorType, setErrorType] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
+  const clearError = () => {
+    if (error) {
+      setError('');
+      setErrorType('');
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+    setErrorType('');
     setIsSubmitting(true);
+
+    const normalizedEmail = email.trim().toLowerCase();
 
     try {
       const response = await fetch(apiUrl('/api/auth/register/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name: name.trim(), email: normalizedEmail, password }),
       });
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.detail || data.error || data.message || 'Unable to create your account.');
+        const isDuplicate = response.status === 409 || isDuplicateRegistrationError(data);
+        const fallback = isDuplicate
+          ? 'This email is already registered. Try logging in instead.'
+          : 'Unable to create your account. Please check your details and try again.';
+
+        setErrorType(isDuplicate ? 'duplicate' : 'general');
+        setError(getApiErrorMessage(data, fallback));
+        return;
       }
 
       const authData = data.data ?? data;
@@ -45,97 +77,157 @@ const Register = () => {
         return;
       }
 
-      navigate('/login', { replace: true, state: { registrationSuccess: true } });
+      navigate('/login', {
+        replace: true,
+        state: { registrationSuccess: true, email: normalizedEmail },
+      });
     } catch (requestError) {
-      setError(requestError.message || 'Unable to create your account. Please try again.');
+      setErrorType('general');
+      setError(requestError instanceof TypeError
+        ? 'We could not reach SwiftSend. Check your connection and try again.'
+        : requestError.message || 'Unable to create your account. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
-      <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
-        <h2 className="text-2xl font-semibold text-center text-[#2C3E50] mb-6">Create Account</h2>
-
-        {error && (
-          <p className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700" role="alert">
-            {error}
-          </p>
-        )}
-
-        <form className="space-y-5" onSubmit={handleSubmit}>
+    <div className="-m-4 flex min-h-[calc(100vh-76px)] items-center justify-center bg-[#f7faf9] px-4 py-10 sm:px-6 lg:px-8">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_28px_70px_-28px_rgba(15,35,31,.3)] lg:grid-cols-[.9fr_1.1fr]">
+        <aside className="relative overflow-hidden bg-[#102522] p-7 text-white sm:p-10 lg:p-12">
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#35d3a6]/15 blur-3xl" />
           <div className="relative">
-            <input
-              type="text"
-              id="name"
-              required
-              autoComplete="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2C3E50] focus:border-transparent"
-              placeholder=" "
-            />
-            <label
-              htmlFor="name"
-              className="absolute left-3 top-2 text-sm text-gray-500 transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-sm peer-focus:text-[#2C3E50]"
-            >
-              Full Name
-            </label>
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#8ee3c7]/25 bg-[#8ee3c7]/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[.14em] text-[#9ff4dc]">
+              <LockKeyhole size={14} />
+              Join SwiftSend
+            </span>
+            <h1 className="mt-7 text-3xl font-bold tracking-[-.05em] sm:text-4xl">Move money with more confidence.</h1>
+            <p className="mt-4 max-w-sm leading-7 text-slate-300">Create one account to send, receive, and keep track of every transfer in one calm, secure place.</p>
+
+            <div className="mt-10 space-y-5">
+              {[
+                'See the full cost before you send',
+                'Track transfers from start to finish',
+                'Access your account on any device',
+              ].map((benefit) => (
+                <div key={benefit} className="flex items-start gap-3 text-sm text-slate-200">
+                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#8ee3c7]/15 text-[#9ff4dc]"><Check size={13} strokeWidth={3} /></span>
+                  <span>{benefit}</span>
+                </div>
+              ))}
+            </div>
           </div>
+        </aside>
 
-          <div className="relative">
-            <input
-              type="email"
-              id="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2C3E50] focus:border-transparent"
-              placeholder=" "
-            />
-            <label
-              htmlFor="email"
-              className="absolute left-3 top-2 text-sm text-gray-500 transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-sm peer-focus:text-[#2C3E50]"
-            >
-              Email
-            </label>
+        <section className="p-6 sm:p-10 lg:p-12" aria-labelledby="register-heading">
+          <div className="mx-auto max-w-md">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[.16em] text-[#0f8c76]">Get started</p>
+              <h2 id="register-heading" className="mt-2 text-3xl font-bold tracking-[-.045em] text-slate-950">Create your account</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">It only takes a minute to set up your SwiftSend account.</p>
+            </div>
+
+            {error && (
+              <div id="register-error" className={`mt-6 flex gap-3 rounded-2xl border p-4 text-sm ${errorType === 'duplicate' ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-red-200 bg-red-50 text-red-800'}`} role="alert" aria-live="polite">
+                <AlertCircle size={19} className="mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-bold">{errorType === 'duplicate' ? 'Account already exists' : 'We could not create your account'}</p>
+                  <p className="mt-1 leading-6">{error}</p>
+                  {errorType === 'duplicate' && (
+                    <Link to="/login" state={{ email }} className="mt-2 inline-flex items-center gap-1 font-bold underline underline-offset-2 hover:no-underline">
+                      Log in instead <ArrowRight size={14} />
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <form className="mt-7 space-y-5" onSubmit={handleSubmit}>
+              <div>
+                <label htmlFor="name" className="text-sm font-semibold text-slate-700">Full name</label>
+                <div className="relative">
+                  <UserRound size={17} className="pointer-events-none absolute left-3.5 top-1/2 mt-1 -translate-y-1/2 text-slate-400" />
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    required
+                    maxLength={150}
+                    autoComplete="name"
+                    value={name}
+                    onChange={(event) => { setName(event.target.value); clearError(); }}
+                    className={`${inputClass} pl-10`}
+                    placeholder="e.g. David Moenga"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="email" className="text-sm font-semibold text-slate-700">Email address</label>
+                <div className="relative">
+                  <Mail size={17} className="pointer-events-none absolute left-3.5 top-1/2 mt-1 -translate-y-1/2 text-slate-400" />
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={email}
+                    onChange={(event) => { setEmail(event.target.value); clearError(); }}
+                    className={`${inputClass} pl-10`}
+                    placeholder="you@example.com"
+                    aria-invalid={errorType === 'duplicate'}
+                    aria-describedby={errorType === 'duplicate' ? 'register-error' : undefined}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between gap-3">
+                  <label htmlFor="password" className="text-sm font-semibold text-slate-700">Password</label>
+                  <span className="text-xs text-slate-400">8+ characters</span>
+                </div>
+                <div className="relative">
+                  <LockKeyhole size={17} className="pointer-events-none absolute left-3.5 top-1/2 mt-1 -translate-y-1/2 text-slate-400" />
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(event) => { setPassword(event.target.value); clearError(); }}
+                    className={`${inputClass} pl-10 pr-11`}
+                    placeholder="Create a secure password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    className="absolute right-2 top-1/2 mt-1 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#bdeedc]"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0f766e] px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-teal-900/15 transition hover:-translate-y-0.5 hover:bg-[#0b645e] focus:outline-none focus:ring-4 focus:ring-[#dff7ef] disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
+                aria-busy={isSubmitting}
+              >
+                {isSubmitting ? <><LoaderCircle size={18} className="animate-spin" /> Creating account…</> : <>Create free account <ArrowRight size={17} /></>}
+              </button>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-slate-500">
+              Already have an account?{' '}
+              <Link to="/login" className="font-bold text-[#087869] underline-offset-4 hover:underline">Log in</Link>
+            </p>
           </div>
-
-          <div className="relative">
-            <input
-              type="password"
-              id="password"
-              required
-              autoComplete="new-password"
-              minLength="8"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2C3E50] focus:border-transparent"
-              placeholder=" "
-            />
-            <label
-              htmlFor="password"
-              className="absolute left-3 top-2 text-sm text-gray-500 transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-sm peer-focus:text-[#2C3E50]"
-            >
-              Password
-            </label>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-[#2C3E50] text-white py-2 rounded-md hover:bg-[#1B2B3A] transition duration-200"
-          >
-            {isSubmitting ? 'Creating account…' : 'Register'}
-          </button>
-        </form>
-
-        <p className="mt-4 text-sm text-center text-gray-600">
-          Already have an account?{" "}
-          <Link to="/login" className="text-[#2C3E50] hover:underline">Login here</Link>
-        </p>
+        </section>
       </div>
     </div>
   );

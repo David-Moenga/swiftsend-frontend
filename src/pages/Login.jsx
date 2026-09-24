@@ -1,19 +1,27 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowRight, Eye, EyeOff, LoaderCircle, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
-import { apiUrl } from '../auth/api';
+import { apiUrl, getApiErrorMessage } from '../auth/api';
+
+const inputClass = 'mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#4cbfa5] focus:ring-4 focus:ring-[#dff7ef]';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const [email, setEmail] = useState(() => location.state?.email || '');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const registrationSuccess = location.state?.registrationSuccess;
   const from = location.state?.from;
+
+  const clearError = () => {
+    if (error) setError('');
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -25,12 +33,12 @@ const Login = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
       });
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.detail || data.error || data.message || 'Unable to sign in.');
+        throw new Error(getApiErrorMessage(data, 'Unable to sign in. Check your email and password.'));
       }
 
       signIn(data);
@@ -43,75 +51,87 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
-      <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
-        <h2 className="text-2xl font-semibold text-center text-[#2C3E50] mb-6">Login to SwiftSend</h2>
-        
+    <div className="-m-4 flex min-h-[calc(100vh-76px)] items-center justify-center bg-[#f7faf9] px-4 py-10 sm:px-6 lg:px-8">
+      <section className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_-28px_rgba(15,35,31,.3)] sm:p-10" aria-labelledby="login-heading">
+        <div className="text-center">
+          <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[#e7faf3] text-[#0f766e]"><ShieldCheck size={24} /></span>
+          <p className="mt-6 text-sm font-bold uppercase tracking-[.16em] text-[#0f8c76]">Welcome back</p>
+          <h1 id="login-heading" className="mt-2 text-3xl font-bold tracking-[-.045em] text-slate-950">Log in to SwiftSend</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">Pick up where you left off and keep moving money.</p>
+        </div>
+
         {registrationSuccess && (
-          <p className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-700">
-            Your account was created. Sign in to continue.
-          </p>
+          <div className="mt-6 rounded-2xl border border-[#bdeedc] bg-[#f0fbf6] p-4 text-sm text-[#17634f]" role="status">
+            Your account was created. Log in to continue.
+          </div>
         )}
 
         {error && (
-          <p className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700" role="alert">
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-800" role="alert" aria-live="polite">
             {error}
-          </p>
+          </div>
         )}
 
-        <form className="space-y-5" onSubmit={handleSubmit}>
-          <div className="relative">
-            <input
-              type="email"
-              id="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2C3E50] focus:border-transparent"
-              placeholder=" "
-            />
-            <label
-              htmlFor="email"
-              className="absolute left-3 top-2 text-sm text-gray-500 transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-sm peer-focus:text-[#2C3E50]"
-            >
-              Email
-            </label>
+        <form className="mt-7 space-y-5" onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor="email" className="text-sm font-semibold text-slate-700">Email address</label>
+            <div className="relative">
+              <Mail size={17} className="pointer-events-none absolute left-3.5 top-1/2 mt-1 -translate-y-1/2 text-slate-400" />
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(event) => { setEmail(event.target.value); clearError(); }}
+                className={`${inputClass} pl-10`}
+                placeholder="you@example.com"
+              />
+            </div>
           </div>
 
-          <div className="relative">
-            <input
-              type="password"
-              id="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2C3E50] focus:border-transparent"
-              placeholder=" "
-            />
-            <label
-              htmlFor="password"
-              className="absolute left-3 top-2 text-sm text-gray-500 transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-sm peer-focus:text-[#2C3E50]"
-            >
-              Password
-            </label>
+          <div>
+            <label htmlFor="password" className="text-sm font-semibold text-slate-700">Password</label>
+            <div className="relative">
+              <LockKeyhole size={17} className="pointer-events-none absolute left-3.5 top-1/2 mt-1 -translate-y-1/2 text-slate-400" />
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => { setPassword(event.target.value); clearError(); }}
+                className={`${inputClass} pl-10 pr-11`}
+                placeholder="Enter your password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((visible) => !visible)}
+                className="absolute right-2 top-1/2 mt-1 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#bdeedc]"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-[#2C3E50] text-white py-2 rounded-md hover:bg-[#1B2B3A] transition duration-200"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0f766e] px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-teal-900/15 transition hover:-translate-y-0.5 hover:bg-[#0b645e] focus:outline-none focus:ring-4 focus:ring-[#dff7ef] disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:translate-y-0"
+            aria-busy={isSubmitting}
           >
-            {isSubmitting ? 'Signing in…' : 'Login'}
+            {isSubmitting ? <><LoaderCircle size={18} className="animate-spin" /> Logging in…</> : <>Log in <ArrowRight size={17} /></>}
           </button>
         </form>
 
-        <p className="mt-4 text-sm text-center text-gray-600">
+        <p className="mt-6 text-center text-sm text-slate-500">
           Don&apos;t have an account?{' '}
-          <Link to="/register" className="text-[#2C3E50] hover:underline">Register here</Link>
+          <Link to="/register" className="font-bold text-[#087869] underline-offset-4 hover:underline">Create one free</Link>
         </p>
-      </div>
+      </section>
     </div>
   );
 };
